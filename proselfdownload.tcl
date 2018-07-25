@@ -14,9 +14,15 @@ package require json
 
 http::register https 443 tls::socket
 
-#set host tubox.mail.tohoku.ac.jp
-#set publicaddress {nMZQAA7IuU2AFREBwmdkpK62J0L0Lq}
+# 本当はMacOSとかLinuxではここを変えたい
 set savedir $env(HOME)/Downloads
+
+# 指定フォルダを開く(Windows用)
+proc openFolder {} {
+    set path [.top.savedir get]
+    set path [regsub -all / $path "\\"]
+    catch {exec explorer.exe /e,$path}
+}
 
 proc extractCookie {meta currentcookie} {
     upvar $currentcookie cookie
@@ -96,6 +102,7 @@ proc getmsg {con number} {
 
 proc download {} {
     global savedir tubox_url
+    .btn.download configure -state disabled
     .result delete 1.0 end
     if {$tubox_url ne {}} {
         set res [downloadToDir $tubox_url $savedir]
@@ -104,6 +111,7 @@ proc download {} {
             .result insert end "\n"
         }
     }
+    .btn.download configure -state normal
 }
 
 proc paste_url {} {
@@ -116,7 +124,7 @@ frame .top
 pack .top
 label .top.l1 -text {保存フォルダ：}
 entry .top.savedir -width 60 -textvariable savedir
-button .top.l2 -text {TUBoxのURL：} -command paste_url
+button .top.l2 -text {TUBoxのURL：} -command {paste_url; download}
 entry .top.url -width 60 -textvariable tubox_url
 grid .top.l1 -row 0 -column 0
 grid .top.savedir -row 0 -column 1
@@ -124,8 +132,13 @@ grid .top.l2 -row 1 -column 0
 grid .top.url -row 1 -column 1
 pack [frame .btn] -side top
 button .btn.download -text {ダウンロード} -command download
+pack .btn.download -side left
+if {$tcl_platform(platform) eq "windows"} {
+    button .btn.openfolder -text {フォルダを開く} -command openFolder
+    pack .btn.openfolder -side left
+}
 button .btn.exit -text {終了} -command exit
-pack .btn.download .btn.exit -side left
+pack .btn.exit -side left
 text .result -width 60 -height 5
 pack .result -side top
 
