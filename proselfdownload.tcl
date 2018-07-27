@@ -7,6 +7,7 @@ package require json
  
 #tls::init -cafile C:/OpenSSL-Win32/certs/ca-cert.pem
 #set server mail.tohoku.ac.jp
+set publicaddress {}
 #set user 東北大ID
 #set pass パスワード
 
@@ -19,7 +20,11 @@ set savedir $env(HOME)/Downloads
 
 # 指定フォルダを開く(Windows用)
 proc openFolder {} {
+    global publicaddress
     set path [.top.savedir get]
+    if {[file exists $path/$publicaddress]} {
+        set path $path/$publicaddress
+    }
     set path [regsub -all / $path "\\"]
     catch {exec explorer.exe /e,$path}
 }
@@ -45,6 +50,7 @@ proc joinCookie {cookie} {
 }
  
 proc downloadToDir {proself_url savedir} {
+    global publicaddress
     regexp {https://(.*)/public/(.*)} $proself_url dummy host publicaddress
     set cookie {}
 
@@ -118,6 +124,11 @@ proc paste_url {} {
     global tubox_url
     .top.url delete 0 end
     set tubox_url [clipboard get]
+    if {[regexp https://www.google.com/url $tubox_url]} {
+        regexp {https://www.google.com/url\?q=([^&]*)} $tubox_url dummy url1
+        set tubox_url [regsub -all {%3A} $url1 {:}]
+        set tubox_url [regsub -all {%2F} $tubox_url {/}]
+    }
 }
 
 frame .top
