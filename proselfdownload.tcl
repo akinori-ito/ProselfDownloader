@@ -18,6 +18,26 @@ http::register https 443 tls::socket
 # 本当はMacOSとかLinuxではここを変えたい
 set savedir $env(HOME)/Downloads
 
+# 矢印アニメーションのGIF
+set arrowgif [file dirname [file normalize [info script]]]/arrow.gif
+set gifframes 20
+set arrowimg [image create photo -file $arrowgif]
+set downloading -1
+
+proc downloadanime {} {
+    global downloading gifframes arrowimg
+    if {$downloading >= 0} {
+        $arrowimg configure -format "gif -index $downloading"
+        incr downloading
+        if {$downloading == $gifframes} {
+            set downloading 0
+        }
+        after 100 downloadanime
+    } else {
+        $arrowimg configure -format "gif -index 0"       
+    }
+}
+
 # 指定フォルダを開く(Windows用)
 proc openFolder {} {
     global publicaddress
@@ -107,9 +127,11 @@ proc getmsg {con number} {
 }
 
 proc download {} {
-    global savedir tubox_url
+    global savedir tubox_url downloading
     .btn.download configure -state disabled
     .result delete 1.0 end
+    set downloading 0
+    downloadanime
     if {$tubox_url ne {}} {
         set res [downloadToDir $tubox_url $savedir]
         for {set i 0} {$i < [llength $res]} {incr i} {
@@ -118,6 +140,7 @@ proc download {} {
         }
     }
     .btn.download configure -state normal
+    set downloading -1
 }
 
 proc paste_url {} {
@@ -143,7 +166,9 @@ grid .top.l2 -row 1 -column 0
 grid .top.url -row 1 -column 1
 pack [frame .btn] -side top
 button .btn.download -text {ダウンロード} -command download
-pack .btn.download -side left
+# pack .btn.download -side left
+label .btn.downarrow -image $arrowimg
+pack .btn.downarrow -side left
 if {$tcl_platform(platform) eq "windows"} {
     button .btn.openfolder -text {フォルダを開く} -command openFolder
     pack .btn.openfolder -side left
